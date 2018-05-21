@@ -9,8 +9,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +26,7 @@ public class IntegracionCarpetas {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         int opcion, dia, mes, año;
         String dni, usuario, contraseña, nombreApellidos, departamento, nivelEstudio, nomFich;
         Calendar FechaNacimiento = Calendar.getInstance();
@@ -34,6 +36,7 @@ public class IntegracionCarpetas {
         Instituto insti1;
         Usuario activo;
         File archivoActivo;
+        Iterator<String> it = null;
         Scanner teclado = new Scanner(System.in);
         System.out.println("Introduce nombre del instituto");
         insti1 = new Instituto(teclado.nextLine());
@@ -216,9 +219,9 @@ public class IntegracionCarpetas {
                                 Scanner sc = new Scanner(archivoAeliminar);
                                 contenido = sc.nextLine();
                                 sc.close();
-                                File nuevoArchivo=new File("usuarios/papelera/"+nombre);
+                                File nuevoArchivo = new File("usuarios/papelera/" + nombre);
                                 nuevoArchivo.createNewFile();
-                                PrintWriter pw=new PrintWriter(nuevoArchivo);
+                                PrintWriter pw = new PrintWriter(nuevoArchivo);
                                 pw.write(contenido);
                                 pw.close();
                             } catch (FileNotFoundException ex) {
@@ -236,6 +239,59 @@ public class IntegracionCarpetas {
                         System.out.println("No se puede borrar porque no existe");
                     }
                     break;
+                case 5:
+
+                    ArrayList<String> listaAlumnosPorFichero = new ArrayList<>();
+                     {
+                        try {
+                            it = cargarEnArray("usuarios", listaAlumnosPorFichero);
+                            System.out.println("****************** RESULTADO **************************");
+                            System.out.println("Fue cargado exitosamente en el iterador");
+                        } catch (FileNotFoundException ex) {
+                            Logger.getLogger(IntegracionCarpetas.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    break;
+                case 6:
+                    if (it != null) {
+                        System.out.println("*************************");
+                        System.out.println("");
+                        while (it.hasNext()) {
+                            System.out.println(it.next());
+                        }
+                        System.out.println("");
+                        System.out.println("*************************");
+                    } else {
+                        System.out.println("Esta vacio el iterador o no fue inicialziado");
+                    }
+                    break;
+                case 7:
+                    File copiaSeguridad = new File("usuarios/alumnos.bac");
+                    ArrayList<String> listaAlumnosPorFichero2 = new ArrayList<>();
+                    it = cargarEnArray("usuarios", listaAlumnosPorFichero2);
+                    if (copiaSeguridad.exists()) {
+                        PrintWriter pw = new PrintWriter(copiaSeguridad);
+                        while (it.hasNext()) {
+                            pw.println(it.next());
+                        }
+                        pw.flush();
+                        pw.close();
+                    } else {
+                        try {
+                            copiaSeguridad.createNewFile();
+                            PrintWriter pw = new PrintWriter(copiaSeguridad);
+                            while (it.hasNext()) {
+                                pw.println(it.next());
+                            }
+                            pw.flush();
+                            pw.close();
+                        } catch (IOException ex) {
+                            Logger.getLogger(IntegracionCarpetas.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        
+                    }
+                    
+                    break;
             }
         } while (opcion != 0);
 
@@ -248,6 +304,8 @@ public class IntegracionCarpetas {
         System.out.println("3.-Generar contraseñas para un usuario en concreto y escribir en fichero");
         System.out.println("4.-Borrar un usuario junto a su fichero");
         System.out.println("5.-Cargar ficheros en array");
+        System.out.println("6.-Imprimir el iterador");
+        System.out.println("7.-Hacer copia de seguridad");
         System.out.println("0.-Para salir");
     }
 
@@ -270,6 +328,29 @@ public class IntegracionCarpetas {
             }
         }
         return null;
+    }
+
+    public static Iterator cargarEnArray(String rutaInicial, ArrayList<String> listaUsuarios) throws FileNotFoundException {
+        File[] arrayFicheros = new File(rutaInicial).listFiles();
+        String res = "";
+        for (int i = 0; i < arrayFicheros.length; i++) {
+            if (arrayFicheros[i].isFile() && !arrayFicheros[i].getName().equalsIgnoreCase("alumnos.bac")) {
+                Scanner sc = new Scanner(arrayFicheros[i]);
+                while (sc.hasNext()) {
+                    res = sc.nextLine();
+                    listaUsuarios.add(res);
+                }
+                sc.close();
+            }
+            if (arrayFicheros[i].isDirectory()) {
+                //System.out.println("Entrando en directorio...");
+                String nuevaRuta = rutaInicial + "/" + arrayFicheros[i].getName();
+                //System.out.println(nuevaRuta);
+                cargarEnArray(nuevaRuta, listaUsuarios);
+            }
+        }
+
+        return listaUsuarios.iterator();
     }
 
 }
